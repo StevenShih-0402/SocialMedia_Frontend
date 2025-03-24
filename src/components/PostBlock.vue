@@ -6,7 +6,7 @@
         <button @click="toggleCommentInput">新增留言</button>
 
         <!-- 編輯 & 刪除按鈕，僅當前使用者可見 -->
-        <button v-if="isOwner" @click="editPost">編輯</button>
+        <button v-if="isOwner" @click="toggleShowUpdateForm">編輯</button>
         <button v-if="isOwner" @click="deletePost">刪除</button>
         
         <!-- 顯示留言區塊 -->
@@ -18,6 +18,13 @@
         <div v-if="addingComment">
             <input v-model="newComment" @keyup.enter="addComment" placeholder="輸入留言..." />
             <button @click="addComment">送出留言</button>
+        </div>
+
+        <!-- 編輯發文區塊 -->
+        <div v-if="showUpdateForm" class="update-post-form">
+            <textarea v-model="updatePostContent" placeholder="輸入您的貼文內容..."></textarea>
+            <button @click="updatePost">發布</button>
+            <button @click="cancelPost">返回</button>
         </div>
 
         <ErrorMessage v-if="errorMessage" :message="errorMessage" @update:message="errorMessage = $event" />
@@ -32,8 +39,8 @@ import ErrorMessage from './ErrorMessage.vue';
 export default {
     props: {
         currentUserId: {
-            type: Number,
-            default: 0
+            type: String,
+            default: ''
         },
         post: {
             type: Object,
@@ -49,8 +56,10 @@ export default {
     data() {
         return {
             showComments: false,
+            showUpdateForm: false,
             addingComment: false,
             newComment: '',
+            updatePostContent: this.post.content,
             comments: [], // 儲存留言資料
             errorMessage: ''
         };
@@ -71,15 +80,21 @@ export default {
         toggleShowComments() {
             this.showComments = !this.showComments;
         },
+        toggleShowUpdateForm() {
+            this.showUpdateForm = !this.showUpdateForm;
+        },
         async addComment() {
-            if (!this.newComment.trim()) return; // 防止發送空白留言
-
             const commentData = { postId: this.post.id, content: this.newComment };
-            await socialMediaService.createComment(commentData);
-            this.newComment = '';
-            this.showComments = true;
-            // 新增留言後重新載入留言
-            await this.fetchComments();
+            const response = await socialMediaService.createComment(commentData);
+            if (response.code === '0' && response.message === 'SUCCESS') {
+                this.newComment = '';
+                this.showComments = true;
+                this.addingComment = false;
+                // 新增留言後重新載入留言
+                await this.fetchComments();
+            }else{
+                this.errorMessage = response.message;
+            }
         },
         async fetchComments() {
             try {
@@ -90,15 +105,27 @@ export default {
                 console.error("獲取留言失敗", error);
             }
         },
-        async editPost() {
-            // 編輯貼文的邏輯（彈出編輯框）
-            console.log("編輯貼文", this.key);
+        async updatePost() {
+            const postData = { id: this.post.id, content: this.updatePostContent };
+            const response = await socialMediaService.updatePost(postData);
+            if (response.code === '0' && response.message === 'SUCCESS') {
+                this.showUpdateForm = false; // 隱藏發文表單
+                this.updatePostContent = response.data.content;  // 重新初始化貼文內容
+                this.$emit("refreshPosts"); // 觸發父元件刷新貼文列表
+            } else {
+                this.errorMessage = response.message;
+            }
+        },
+        cancelPost() {
+            this.showUpdateForm = false;
+            this.updatePostContent = this.post.content;
         },
         async deletePost() {
-            if(this.isOwner()){
+            if(this.post.userId === this.currentUserId){
                 if (confirm("確定要刪除這篇貼文嗎？")) {
-                    await socialMediaService.deletePost(this.post.id);
-                    this.$emit('refreshPosts'); // 觸發父元件刷新貼文列表
+                    const postData = { id: this.post.id };
+                    await socialMediaService.deletePost(postData);
+                    this.$emit("refreshPosts"); // 觸發父元件刷新貼文列表
                 }
             }
             else{
