@@ -29,7 +29,7 @@
             <div v-if="loading">載入中...</div>
             <div v-else-if="posts.length === 0">目前沒有貼文</div>
             <div v-else>
-                <PostBlock v-for="post in posts" :key="post.id" :post="post" :current-user-id="userData.id" />
+                <PostBlock v-for="post in posts" :key="post.id" :post="post" :current-user-id="userData.id" @refreshPosts="fetchPosts" />
             </div>
         </div>
 
