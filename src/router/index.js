@@ -25,6 +25,7 @@ const routes = [
   }
 ]
 
+// 設定 HTML5 路由模式
 const router = createRouter({
   history: createWebHistory(),
   routes

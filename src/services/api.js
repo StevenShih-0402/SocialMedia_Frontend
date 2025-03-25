@@ -2,8 +2,7 @@ import axios from 'axios'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 
-
-// 創建帶有默認配置的 axios 實例
+// 創建 axios 實例，用於管理 API 請求
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -22,53 +21,43 @@ apiClient.interceptors.request.use(config => {
     return Promise.reject(error)
 })
 
-// 處理過期(未授權)的 Token
-apiClient.interceptors.response.use(response => {
-    return response
-}, error => {
-    if (error.response && error.response.status === 401) {
-        // 401 未授權，清除 token 並重定向到登錄頁面
-        localStorage.removeItem('token')
-        window.location.href = '/login'
-    }
-    return Promise.reject(error)
-})
+
 
 export const socialMediaService = {
 
   // 查詢貼文內所有留言
   async queryCommentInPost(commentData) {
-    const response = await apiClient.post('/comment/query', commentData)
+    const response = await apiClient.post('/comment/query-comments', commentData)
     return response.data
   },
 
   // 新增留言
   async createComment(commentData) {
-    const response = await apiClient.post('/comment/create', commentData)
+    const response = await apiClient.post('/comment/create-comment', commentData)
     return response.data
   },
 
   // 刪除貼文
   async deletePost(postData) {
-    const response = await apiClient.delete('/post/delete', { data: postData })
+    const response = await apiClient.delete('/post/delete-post', { data: postData })
     return response.data
   },
 
   // 編輯貼文
   async updatePost(postData) {
-    const response = await apiClient.put('/post/update', postData)
+    const response = await apiClient.put('/post/update-post', postData)
     return response.data
   },
 
   // 查詢所有貼文
   async queryAllPosts() {
-    const response = await apiClient.get('/post/query')
+    const response = await apiClient.get('/post/query-posts')
     return response.data
   },
 
   // 發布貼文
   async createPost(postData) {
-    const response = await apiClient.post('/post/create', postData)
+    const response = await apiClient.post('/post/create-post', postData)
     return response.data
   },
 
@@ -86,7 +75,7 @@ export const socialMediaService = {
 
   // 查詢用戶資訊
   async queryUser() {
-    const response = await apiClient.get('/user/query')
+    const response = await apiClient.get('/user/query-user')
     return response.data
   },
 
