@@ -23,7 +23,35 @@ export default {
 </script>
 
 <style scoped>
-.comments {
-    padding-left: 10px;
-}
+    strong{
+        padding-right: 5px;
+    }
+
+    /* 通用 comment 設計 */
+    .comments {
+        padding: 10px;
+    }
+
+    /* 第一個 comment 的邊框圓角 */
+    .comments:first-child {
+        margin-top: 10px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+
+    /* 最後一個 comment 的邊框圓角 */
+    .comments:last-child {
+        border-bottom-left-radius: 5px;
+        border-bottom-right-radius: 5px;
+    }
+
+    /* 偶數 comment 背景顏色 */
+    .comments:nth-child(even) {
+        background-color: #8efef7;
+    }
+
+    /* 奇數 comment 背景顏色 */
+    .comments:nth-child(odd) {
+        background-color: #c7ffb9;
+    }
 </style>
