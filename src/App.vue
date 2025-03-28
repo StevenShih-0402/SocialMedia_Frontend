@@ -16,8 +16,8 @@ export default {
                     throw new Error('Server down');
                 }
             } catch (error) {
-                localStorage.removeItem('token'); // 移除 Token
-                this.$router.push('/'); // 跳轉回登入頁
+                // localStorage.removeItem('token'); // 移除 Token
+                // this.$router.push('/'); // 跳轉回登入頁
             }
         }
     }

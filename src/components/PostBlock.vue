@@ -1,14 +1,19 @@
 <template>
+    <div class="dropdown">
+        <button v-if="isOwner" class="dropdown-btn" @click="toggleDropdown"><i class="fa fa-angle-down fa-2x"></i></button>
+        <div class="dropdown-menu" v-show="isDropdownOpen">
+            <!-- 編輯 & 刪除按鈕，只有目前的使用者可以看到 -->
+            <button @click="toggleShowUpdateForm" class="btn-edit-post">編輯</button>
+            <button @click="deletePost" class="btn-delete-post">刪除</button>
+        </div>
+    </div>
     <div class="post">
         <h3>{{ post.userName }}</h3>
         <hr>
         <p>{{ post.content }}</p>
-        <div class="button-area">
-            <button @click="toggleShowComments" class="btn-check-comment">查看留言</button>
 
-            <!-- 編輯 & 刪除按鈕，只有目前的使用者可以看到 -->
-            <button v-if="isOwner" @click="toggleShowUpdateForm" class="btn-edit-post">編輯</button>
-            <button v-if="isOwner" @click="deletePost" class="btn-delete-post">刪除</button>
+        <div class="button-area">
+            <button @click="toggleShowComments" class="btn-check-comment"><i class="fa fa-comments"></i>查看留言</button>
         </div>
         <!-- 顯示留言區塊 -->
         <div v-if="showComments">
@@ -66,7 +71,8 @@ export default {
             newComment: '',
             updatePostContent: this.post.content,
             comments: [], // 儲存留言資料
-            errorMessage: ''
+            errorMessage: '',
+            isDropdownOpen: false,
         };
     },
     computed: {
@@ -84,6 +90,7 @@ export default {
         },
         toggleShowUpdateForm() {
             this.showUpdateForm = !this.showUpdateForm;
+            this.isDropdownOpen = false;
         },
         async addComment() {
             const commentData = { postId: this.post.id, content: this.newComment };
@@ -113,7 +120,8 @@ export default {
             if (response.code === '0' && response.message === 'SUCCESS') {
                 this.showUpdateForm = false; // 隱藏發文表單
                 this.updatePostContent = response.data.content;  // 重新初始化貼文內容
-                this.$emit("refreshPosts"); // 觸發父元件刷新貼文列表
+                // this.$emit("refreshPosts"); // 觸發父元件刷新貼文列表
+                location.reload();
             } else {
                 this.errorMessage = response.message;
             }
@@ -123,19 +131,23 @@ export default {
             this.updatePostContent = this.post.content;
         },
         async deletePost() {
+            this.isDropdownOpen = false;
             if(this.post.userId === this.currentUserId){
                 if (confirm("確定要刪除這篇貼文嗎？")) {
                     console.log(this.post.id);
                     const postData = { id: this.post.id };
                     await socialMediaService.deletePost(postData);
-                    this.$emit("refreshPosts"); // 觸發父元件刷新貼文列表
+                    // this.$emit("refreshPosts"); // 觸發父元件刷新貼文列表
+                    location.reload();
                 }
             }
             else{
                 this.errorMessage = "只有自己發布的文章才可以進行刪除。";
             }
-        }
-
+        },
+        toggleDropdown() {
+            this.isDropdownOpen = !this.isDropdownOpen;
+        },
     }
 };
 </script>
@@ -162,7 +174,7 @@ export default {
         padding: 20px;
         border-radius: 10px;  /* 邊框圓角 */
         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);  /* 輕微陰影效果 */
-        z-index: 10;  /* 確保它在其他元素之上 */
+        z-index: 1;  /* 確保它在其他元素之上 */
         width: 80%;  /* 控制發文區塊寬度 */
         max-width: 500px;  /* 控制最大寬度 */
     }
@@ -178,6 +190,7 @@ export default {
         display: flex;
         justify-content: center;
         align-items: center;
+        z-index: 4;
     }
 
     .update-post-form h2{
@@ -278,19 +291,23 @@ export default {
     }
 
     /* 編輯和刪除按鈕的不同背景色 */
-    .button-area .btn-edit-post {  /* 編輯按鈕 */
+    .btn-edit-post {  /* 編輯按鈕 */
         background-color: #ff9800;
+        color: white;
+        border: none;
     }
 
-    .button-area .btn-edit-post:hover {
+    .btn-edit-post:hover {
         background-color: #e68900;
     }
 
-    .button-area .btn-delete-post {  /* 刪除按鈕 */
+    .btn-delete-post {  /* 刪除按鈕 */
         background-color: #f44336;
+        color: white;
+        border: none;
     }
 
-    .button-area .btn-delete-post:hover {
+    .btn-delete-post:hover {
         background-color: #e53935;
     }
 
@@ -332,5 +349,40 @@ export default {
 
     .comment-input button:hover {
         background-color: #1976D2;  /* 懸停時的藍色 */
+    }
+
+    .fa-comments{
+        margin-right: 10px;
+    }
+
+    /* 下拉選單 */
+    .dropdown {
+        position: relative;
+    }
+    .dropdown-btn {
+        position: absolute;
+        top: 10px;
+        left: 85%;
+        border: none;
+        background-color: white;
+        cursor: pointer;
+        z-index: 0;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 40px;
+        right: 12%;
+        border-radius: 5px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+
+    .dropdown-menu button{
+        padding: 10px;
+        text-align: left;
+        cursor: pointer;
     }
 </style>

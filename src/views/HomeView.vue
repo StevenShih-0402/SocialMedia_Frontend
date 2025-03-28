@@ -2,10 +2,15 @@
     <div class="home-container">
         <header class="header">
             <h2>社群平台</h2>
-            <div class="btn-area">
-                <button @click="showUserData" class="user-data">{{ userData.userName }}</button>
+            <div class="header-btn">
                 <button @click="createPost" class="create-post">發文</button>
-                <button @click="logout" class="logout">登出</button>
+                <div class="dropdown">
+                    <button class="dropdown-btn" @click="toggleDropdown"><i class="fa fa-bars fa-2x"></i></button>
+                    <div class="dropdown-menu" v-show="isDropdownOpen">
+                        <button @click="showUserData">{{ userData.userName }}</button>
+                        <button @click="logout">登出</button>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -39,6 +44,11 @@
             </div>
         </div>
 
+        <div class="control-btns">
+            <button class="back-to-top" @click="scrollToTop"> ▲ </button>
+            <button class="go-to-bottom" @click="scrollToBottom"> ▼ </button>
+        </div>
+
         <ErrorMessage v-if="errorMessage" :message="errorMessage" @update:message="errorMessage = $event" />
     </div>
 </template>
@@ -47,6 +57,7 @@
 import { socialMediaService } from '@/services/api.js';
 import PostBlock from '@/components/PostBlock.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import _ from "lodash";     // Lodash(_) 是一個 JavaScript 工具函式庫，提供許多實用的函式來處理陣列、物件、字串、數學計算等。
 
 export default {
     components: { PostBlock, ErrorMessage },
@@ -58,28 +69,72 @@ export default {
             showUserInfo: false,   // 控制用戶資訊顯示
             showPostForm: false,   // 控制發文表單顯示
             userData: {},          // 儲存用戶資訊
-            newPostContent: ''     // 儲存新貼文內容
+            newPostContent: '',    // 儲存新貼文內容
+            isDropdownOpen: false, // 下拉清單顯示狀態
+            pageNo: 0,             // 目前的頁數
+            pageSize: 5,           // 每個分頁的頁數
+            isLoading: false,      // 避免重複加載
+            hasMore: true          // 若剩餘文章數為 0 則不執行查詢
         };
     },
     async mounted() {
         await this.fetchPosts();
         await this.showUserData();
         this.showUserInfo = false;
+        window.addEventListener("scroll", _.throttle(this.handleScroll, 1000)); // 監聽滾動事件，並設定節流，每秒最多觸發一次
+    },
+    beforeUnmount() {
+        window.removeEventListener("scroll", this.handleScroll); // 離開頁面前移除事件監聽
     },
     methods: {
+        scrollToTop() {
+            window.scrollTo({ top: 0, behavior: "smooth" }); // 平滑滾動到頂部
+        },
+        scrollToBottom() {
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }); // 平滑滾動到底部
+        },
+        handleScroll() {
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const pageHeight = document.documentElement.offsetHeight;
+            const bottomOffset = 100; // 提前 100px 觸發加載
+
+            if (scrollPosition >= pageHeight - bottomOffset) {
+                this.loadMorePosts();
+            }
+        },
+        async loadMorePosts() {
+            if (!this.isLoading || this.hasMore){
+                this.isLoading = true; // **立即設為 true，避免短時間內重複觸發**
+                await this.fetchPosts();
+                this.isLoading = false; // **確保請求完成後才解除鎖定**
+            }
+        },
         async fetchPosts() {
             try {
-                const response = await socialMediaService.queryAllPosts();
-                if (response.code === '0' && response.message === 'SUCCESS') {
-                    this.posts = response.data;
-                } else {
-                    this.errorMessage = response.message;
+                if(this.hasMore){               
+                    const postData = {
+                        pageNo: this.pageNo,
+                        pageSize: this.pageSize
+                    };
+                    const response = await socialMediaService.queryAllPosts(postData);
+                    if (response.code === '0' && response.message === 'SUCCESS') {
+                        // this.posts = response.data;
+                        if (response.data.length > 0) {
+                            this.posts = [...this.posts, ...response.data]; // 追加新資料
+                            this.pageNo++;  // 正確增加頁數
+                        } else {
+                            this.hasMore = false; // **如果回傳 0 筆資料，代表沒有更多數據**
+                        }
+                    } else {
+                        this.errorMessage = response.message;
+                    }
                 }
             } catch (error) {
                 console.error("獲取貼文失敗", error);
                 this.errorMessage = '無法載入貼文';
             } finally {
                 this.loading = false;
+                setTimeout(() => { this.isLoading = false; }, 500); // 0.5 秒後允許下一次加載
             }
         },
         async showUserData() {
@@ -91,10 +146,10 @@ export default {
                 } else {
                     this.errorMessage = response.message;
                 }
+                this.isDropdownOpen = false;
             } catch (error) {
                 console.error("獲取用戶資訊失敗", error);
                 this.errorMessage = '無法獲取用戶資訊';
-                this.$router.push('/');
             }
         },
         closeUserData() {
@@ -109,7 +164,8 @@ export default {
                 const response = await socialMediaService.createPost(postData);
                 if (response.code === '0' && response.message === 'SUCCESS') {
                     // 發文成功後重新載入貼文
-                    await this.fetchPosts();
+                    // await this.fetchPosts();
+                    location.reload();
                     this.showPostForm = false; // 隱藏發文表單
                     this.newPostContent = '';  // 清空貼文內容
                 } else {
@@ -136,7 +192,11 @@ export default {
             } catch (error) {
                 console.error("登出失敗", error);
             }
-        }
+            this.isDropdownOpen = false;
+        },
+        toggleDropdown() {
+            this.isDropdownOpen = !this.isDropdownOpen;
+        },
     }
 };
 </script>
@@ -156,6 +216,10 @@ export default {
     .user-info, .post-form {
         margin-top: 20px;
     }
+    .header-btn{
+        display: flex;
+        gap: 10px;
+    }
 
     
     /* 背景亮度降低效果 */
@@ -169,6 +233,7 @@ export default {
         display: flex;
         justify-content: center;
         align-items: center;
+        z-index: 4;
     }
 
 
@@ -185,6 +250,7 @@ export default {
         padding: 15px 30px;  /* 上下 15px，左右 30px 的內邊距 */
         width: 100%;  /* 讓區塊寬度占滿螢幕 */
         box-sizing: border-box;  /* 包括邊距與邊框在內 */
+        z-index: 3;
     }
 
     .header h2 {
@@ -201,35 +267,21 @@ export default {
 
     /* 按鈕樣式 */
     .header button {
-        padding: 10px 20px;
+        padding: 5px 20px;
         border: none;
-        border-radius: 5px;  /* 圓角按鈕 */
         cursor: pointer;
-        font-size: 16px;
-        background-color: #4CAF50;  /* 默認綠色背景 */
-        color: white;  /* 白色文字 */
+        font-size: 18px;
+        font-weight: bold;
         transition: background-color 0.3s ease;
     }
 
-    .btn-area .user-data {  /* 用戶名顯示按鈕 */
-        background-color: #2196F3;  /* 藍色背景 */
-    }
-    .btn-area .user-data:hover {
-        background-color: #1976D2;  /* 用戶名按鈕懸停藍色 */
-    }
-
-    .btn-area .create-post {  /* 發文按鈕 */
+    .create-post {  /* 發文按鈕 */
         background-color: #ff9800;  /* 橙色背景 */
+        color: white;
+        border-radius: 5px;
     }
-    .btn-area .create-post:hover {
+    .create-post:hover {
         background-color: #e68900;  /* 發文按鈕懸停橙色 */
-    }
-
-    .btn-area .logout {  /* 登出按鈕 */
-        background-color: #f44336;  /* 紅色背景 */
-    }
-    .btn-area .logout:hover {
-        background-color: #d22825;  /* 登出按鈕懸停紅色 */
     }
 
 
@@ -245,7 +297,7 @@ export default {
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         width: 80%; /* 可以根據需要調整寬度 */
         max-width: 500px; /* 限制最大寬度 */
-        z-index: 1000; /* 確保顯示在其他元素之上 */
+        z-index: 2; /* 確保顯示在其他元素之上 */
     }
 
     .user-info h2 {
@@ -287,7 +339,7 @@ export default {
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         width: 80%;
         max-width: 500px;
-        z-index: 1000;
+        z-index: 2;
         text-align: center; /* 讓內容置中 */
     }
 
@@ -324,5 +376,72 @@ export default {
 
     .post-form button + button {
         margin-left: 10px; /* 設置兩個按鈕的間距 */
+    }
+
+    /* 下拉選單 */
+    .dropdown {
+        position: relative;
+    }
+    .dropdown-btn {
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px;
+        cursor: pointer;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0%;
+        border-radius: 5px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+        margin-top: 12px;
+    }
+
+    .dropdown-menu button{
+        padding: 10px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .dropdown-menu button:last-child{
+        border-bottom-left-radius: 5px;
+        border-bottom-right-radius: 5px;
+    }
+
+    .dropdown-menu button:hover {
+        background-color: #333;
+        color: white;
+    }
+
+    /* 回到頁面最上/最下層 */
+    .control-btns{
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: fixed;
+        bottom: 40px;
+        right: 20px;
+    }
+
+    .back-to-top,
+    .go-to-bottom{
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: opacity 0.3s;
+    }
+    .back-to-top:hover, 
+    .go-to-bottom:hover {
+        background-color: #0056b3;
     }
 </style>

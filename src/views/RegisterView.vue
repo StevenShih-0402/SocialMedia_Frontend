@@ -5,6 +5,7 @@
             <input v-model="userName" placeholder="使用者名稱" />
             <input v-model="email" placeholder="電子郵件" />
             <input v-model="password" type="password" placeholder="密碼" />
+            <input v-model="confirmPwd" type="password" placeholder="確認密碼" />
             <input v-model="biography" placeholder="個人簡介" />
             <input v-model="phone" placeholder="手機號碼" />
             <div class="btn-area">
@@ -27,6 +28,7 @@
                 userName: '',
                 email: '',
                 password: '',
+                confirmPwd: '',
                 biography: '',
                 phone: '',
                 errorMessage: ''
@@ -34,19 +36,24 @@
         },
         methods: {
             async register() {
-                const response = await socialMediaService.register({
-                    userName: this.userName, 
-                    email: this.email, 
-                    password: this.password, 
-                    biography: this.biography, 
-                    phone: this.phone }
-                );
+                if(this.password !== this.confirmPwd){
+                    this.errorMessage = "\"密碼\"與\"確認密碼\"輸入的內容不同。";
+                }
+                else{
+                    const response = await socialMediaService.register({
+                        userName: this.userName, 
+                        email: this.email, 
+                        password: this.password, 
+                        biography: this.biography, 
+                        phone: this.phone }
+                    );
 
-                if(response.code == "0"){
-                    localStorage.setItem('token', response.data);
-                    this.$router.push('/home');
-                } else if(response.code != "0"){
-                    this.errorMessage = response.message;
+                    if(response.code == "0"){
+                        localStorage.setItem('token', response.data);
+                        this.$router.push('/home');
+                    } else if(response.code != "0"){
+                        this.errorMessage = response.message;
+                    }
                 }
             }
         }
