@@ -50,8 +50,8 @@ export const socialMediaService = {
   },
 
   // 查詢所有貼文
-  async queryAllPosts() {
-    const response = await apiClient.get('/post/query-posts')
+  async queryAllPosts(postData) {
+    const response = await apiClient.post('/post/query-posts', postData)
     return response.data
   },
 
