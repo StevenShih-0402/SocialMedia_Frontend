@@ -1,5 +1,7 @@
 # Social Media - Frontend
 
+> Backend：https://github.com/StevenShih-0402/SocialMedia_Backend
+
 Note:
 - localhost:3000
 - 電話號碼有欄位驗證，必須輸入09開頭的10碼數字。且註冊時不能註冊重複的電話號碼
