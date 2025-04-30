@@ -24,7 +24,7 @@
 - 對貼文留言
 - 發布新貼文讓其他人互動
 
-![流程圖](https://github.com/user-attachments/assets/546359e5-fdf3-402a-8f9a-73173cb50f6e)
+![流程圖](https://github.com/user-attachments/assets/05361ca8-0abb-4353-86df-dfd35ab8192e)
 
 ---
 
@@ -70,13 +70,17 @@
 
 ![查看留言](https://github.com/user-attachments/assets/ffaa78e7-1dcb-48bd-a0b3-4f9c135fb1bf)
 
+</details>
+
 <details>
-<summary>💬 查看與發送留言</summary>
+<summary>💬 查看、發送與回覆留言</summary>
 
 - 貼文內可查看所有留言
 - 使用者可輸入留言回應該貼文
+- 留言會有樓層標示，點按樓層可以針對特定留言回覆內容 (4/30 更新)
 
 ![發送留言](https://github.com/user-attachments/assets/3740832e-b21e-4cd9-adc7-3ca80e002529)
+![image](https://github.com/user-attachments/assets/3f536735-8e01-4656-9e9f-fb82e4b64dcb)
 
 </details>
 
