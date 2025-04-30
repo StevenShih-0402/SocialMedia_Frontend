@@ -17,7 +17,7 @@
         </div>
         <!-- 顯示留言區塊 -->
         <div v-if="showComments">
-            <CommentBlock v-for="comment in comments" :key="comment.id" :comment="comment" />
+            <CommentBlock v-for="(comment, index) in comments" :key="comment.id" :comment="comment" :index="index + 1" @refresh-comments="fetchComments" />
         </div>
 
         <!-- 留言輸入區 -->
